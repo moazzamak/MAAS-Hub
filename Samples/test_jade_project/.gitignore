@@ -1,0 +1,13 @@
+#eclips ignore
+bin/
+.settings/
+.project
+.classpath
+
+#Local
+APDescription.txt
+MTPs-Main-Container.txt
+run.sh
+
+#Maven
+target/
