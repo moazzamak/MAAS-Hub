@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>jade_project</groupId>
   <artifactId>test_jade_project</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>0.0.1</version>
   <!-- <repositories>
 	  <repository> 
 	    <id>tilab</id> 
@@ -14,15 +14,20 @@
             <id>tilab</id>
             <url>http://jade.tilab.com/maven/</url>
         </repository>
+        <repository>
+            <id>amis-artifactory</id>
+            <name>AMIS Artifactory</name>
+            <url>http://diana.ms.mff.cuni.cz:8081/artifactory/repo</url>
+        </repository>
     </repositories>
- 
+ 	
     <build>
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
+                    <source>1.8</source>
+                    <target>1.8</target>
                 </configuration>
             </plugin>
         </plugins>
@@ -74,16 +79,25 @@
             <artifactId>jade</artifactId>
             <version>4.3.3</version>
         </dependency>
-        <!-- <dependency>
-            <groupId>com.tilab.jade</groupId>
-            <artifactId>jade-test-suite</artifactId>
-            <version>1.12.0</version>
-        </dependency> -->
         <dependency>
 			<groupId>log4j</groupId>
 			<artifactId>log4j</artifactId>
 			<version>1.2.17</version>
 		</dependency>
-		        
+		<dependency>
+            <groupId>cz.cuni.amis.planning4j</groupId>
+            <artifactId>planning4j-base</artifactId>
+            <version>1.1</version>
+        </dependency>
+        <dependency>
+            <groupId>cz.cuni.amis.planning4j.external</groupId>
+            <artifactId>external-planners-pack</artifactId>
+            <version>1.1</version>
+        </dependency>
+        <dependency>
+            <groupId>cz.cuni.amis.planning4j.external</groupId>
+            <artifactId>external-planners-executor</artifactId>
+            <version>1.1</version>
+        </dependency>
     </dependencies>
 </project>
