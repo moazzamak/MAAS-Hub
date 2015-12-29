@@ -1,8 +1,8 @@
 package com.maas.agents;
 
-import utils.RandomNumberGenrator;
-
 import com.maas.domain.Order;
+import com.maas.utils.RandomNumberGenrator;
+import comm.maas.ui.OutwardQueGUI;
 
 import jade.core.AID;
 import jade.core.Agent;
@@ -14,6 +14,7 @@ import jade.lang.acl.MessageTemplate;
 
 public class DummyWorker extends Agent {
 	String orderAgentName;
+//	OutwardQueGUI outGui;
 	protected void setup(){
 		Object[] args = getArguments();
 		orderAgentName = null;
@@ -23,6 +24,11 @@ public class DummyWorker extends Agent {
 			System.out.println("Order agent name not given!");
 			System.exit(-1);
 		}
+//		outGui = OutwardQueGUI.getInstance();
+		if(args[1] != null && Integer.valueOf((String)args[1]) == 1){
+			OutwardQueGUI.getInstance().setVisible(true);
+		}
+		
 		lookForJob(orderAgentName);
 	}
 	private void lookForJob(String orderGenratorName){
@@ -110,6 +116,7 @@ public class DummyWorker extends Agent {
 		System.out.println("Work will take "+String.valueOf(work_time)+" ms");
 		addBehaviour(new WakerBehaviour(this, work_time) {
 			protected void handleElapsedTimeout() {
+				OutwardQueGUI.getInstance().add(job);
 				lookForJob(orderAgentName);
 			}
 		});

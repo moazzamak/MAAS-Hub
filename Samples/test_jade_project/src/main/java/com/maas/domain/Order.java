@@ -1,5 +1,7 @@
 package com.maas.domain;
 
+import jade.util.leap.Properties;
+
 public class Order {
 	public enum ObjectColor{
 		RED,
@@ -20,6 +22,7 @@ public class Order {
 		this.objectType = type;
 		
 	}
+	public static final String[] PROPERTIES={"id","color","type"};
 	private int id;
 	private ObjectColor objectColor;
 	private ObjectType objectType;
@@ -59,6 +62,17 @@ public class Order {
 //		}
 		return this.objectColor.toString();
 	}
+	public String getPropertyString(String propertyName){
+		if(propertyName.equals(PROPERTIES[0])){
+			return String.valueOf(this.id);
+		}else if(propertyName.equals(PROPERTIES[1])){
+			return this.objectColor.toString();
+		}else if(propertyName.equals(PROPERTIES[2])){
+			return this.objectType.toString();
+		}
+		else
+			return "";
+	}
 	public String toString(){
 		return "Order:"+this.getId()+","+this.getColorString()+","+this.getTypeString();
 	}
@@ -69,5 +83,10 @@ public class Order {
 				ObjectType.valueOf(orderArgs[2]));
 		
  		return ord;
+	}
+	public void copyValues(Order other){
+		this.id = other.getId();
+		this.objectColor = other.getObjectColor();
+		this.objectType = other.getObjectType();
 	}
 }
