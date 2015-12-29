@@ -1,4 +1,4 @@
-package utils;
+package com.maas.utils;
 
 import java.util.Random;
 
