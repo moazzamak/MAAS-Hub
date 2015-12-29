@@ -2,11 +2,10 @@ package com.maas.agents;
 
 import java.util.LinkedList;
 
-import utils.RandomNumberGenrator;
-
 import com.maas.domain.Order;
 import com.maas.domain.Order.ObjectColor;
 import com.maas.domain.Order.ObjectType;
+import com.maas.utils.RandomNumberGenrator;
 
 import jade.core.Agent;
 import jade.core.behaviours.Behaviour;
