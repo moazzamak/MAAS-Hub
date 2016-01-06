@@ -10,11 +10,11 @@ import com.maas.domain.Order;
 
 public class OutwardQueGUI extends JFrame {
 	
-	protected static OutwardQueGUI classInstance = null; 
+	private static OutwardQueGUI classInstance = null; 
 	private JTable orderTable; 
 	private JScrollPane listScroller;
 	private QueTableModel tableModel;
-	protected OutwardQueGUI(){
+	private OutwardQueGUI(){
 		super("Outward Que");
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		tableModel = new QueTableModel();
@@ -31,15 +31,15 @@ public class OutwardQueGUI extends JFrame {
 	}
 	public static OutwardQueGUI getInstance(){
 		if(classInstance == null){
+			System.out.println("Creating New Instance of GUI");
 			classInstance = new OutwardQueGUI();
 		}
 		return classInstance;
 	}
-	public void setVisible(boolean vis){
-		try{
-			super.setVisible(vis);
-		}catch(Exception e){
-			e.printStackTrace();
+	public void setVisible(){
+		if(!classInstance.isVisible()){
+			classInstance.setVisible(true);
+			System.out.println("Setting GUI Visible!");
 		}
 	}
 	public void add(Order order){

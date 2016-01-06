@@ -2,19 +2,30 @@ package com.maas.agents;
 
 import com.maas.domain.Order;
 import com.maas.utils.RandomNumberGenrator;
-import comm.maas.ui.OutwardQueGUI;
 
+import comm.maas.ui.OutwardQueGUI;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.OneShotBehaviour;
 import jade.core.behaviours.WakerBehaviour;
+import jade.domain.DFService;
+import jade.domain.FIPAException;
+import jade.domain.FIPAAgentManagement.DFAgentDescription;
+import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 
 public class DummyWorker extends Agent {
+	public enum AgentRole{
+		TRANSPORTER,
+		PAINTER_RED,
+		PAINTER_BLUE,
+		PAINTER_GREEN,
+		TURNER
+	}
 	String orderAgentName;
-//	OutwardQueGUI outGui;
+	AgentRole role;
 	protected void setup(){
 		Object[] args = getArguments();
 		orderAgentName = null;
@@ -24,14 +35,50 @@ public class DummyWorker extends Agent {
 			System.out.println("Order agent name not given!");
 			System.exit(-1);
 		}
-//		outGui = OutwardQueGUI.getInstance();
-		if(args[1] != null && Integer.valueOf((String)args[1]) == 1){
-			OutwardQueGUI.getInstance().setVisible(true);
+		if(args.length > 1){
+			registerAs((String)args[1]);
+		}else{
+			System.out.println("Error: role not given");
+			System.exit(-1);
 		}
-		
 		lookForJob(orderAgentName);
 	}
+	private void registerAs(String role){
+		if(role.equals(AgentRole.TRANSPORTER.toString())){
+			this.role = AgentRole.TRANSPORTER;
+		}else if(role.equals(AgentRole.PAINTER_BLUE.toString())){
+			this.role = AgentRole.PAINTER_BLUE;
+		}else if(role.equals(AgentRole.PAINTER_GREEN.toString())){
+			this.role = AgentRole.PAINTER_GREEN;
+		}else if(role.equals(AgentRole.PAINTER_RED.toString())){
+			this.role = AgentRole.PAINTER_RED;
+		}else if(role.equals(AgentRole.TURNER.toString())){
+			this.role = AgentRole.TURNER;
+		}
+		System.out.println("Agent "+getLocalName()+" registering service \""+this.role.toString()+"\" of type \"weather-forecast\"");
+	  	try {
+	  		DFAgentDescription dfd = new DFAgentDescription();
+	  		dfd.setName(getAID());
+	  		ServiceDescription sd = new ServiceDescription();
+	  		sd.setName(getLocalName());
+	  		sd.setType(this.role.toString());
+	  		// Agents that want to use this service need to "know" the weather-forecast-ontology
+//	  		sd.addOntologies("weather-forecast-ontology");
+	  		// Agents that want to use this service need to "speak" the FIPA-SL language
+//	  		sd.addOntologies(FIPANames.ContentLanguage.FIPA_SL);
+//	  		sd.addProperties(new Property("country", "Italy"));
+	  		dfd.addServices(sd);
+	  		
+	  		DFService.register(this, dfd);
+	  	}
+	  	catch (FIPAException fe) {
+	  		fe.printStackTrace();
+	  	}
+	}
 	private void lookForJob(String orderGenratorName){
+		if(role != AgentRole.TRANSPORTER){
+			return;
+		}
 		this.addBehaviour(new OneShotBehaviour() {
 			@Override
 			public void action() {
@@ -72,6 +119,7 @@ public class DummyWorker extends Agent {
 		});
 	}
 	private void acceptTheJob(Order job){
+		searchForPainter(job.getObjectColor());
 		System.out.println("Accepting Job : "+ getLocalName());
 		addBehaviour(new OneShotBehaviour() {
 			@Override
@@ -123,5 +171,28 @@ public class DummyWorker extends Agent {
 		System.out.println(getLocalName()+" Done with "+job.toString());
 	}
 	
-	
+	protected void takeDown() 
+    {
+       try { DFService.deregister(this); }
+       catch (Exception e) {}
+    }
+	private DFAgentDescription[] searchForPainter(Order.ObjectColor color){
+		DFAgentDescription dfd = new DFAgentDescription();
+        ServiceDescription sd  = new ServiceDescription();
+        sd.setType("PAINTER_"+color.toString());
+        dfd.addServices(sd);
+        
+        DFAgentDescription[] result;
+		try {
+			result = DFService.search(this, dfd);
+			System.out.println(result.length + " results" );
+	        if (result.length>0)
+	            System.out.println(" " + result[0].getName() );
+	        return result;
+		} catch (FIPAException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+	}
 }
