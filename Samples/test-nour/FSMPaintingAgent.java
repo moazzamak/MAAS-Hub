@@ -7,12 +7,12 @@ import java.util.*;
 
 public class FSMPaintingAgent extends Agent{
 	
-	private static final String STATE_A = "A";
-	private static final String STATE_B = "B";
-	private static final String STATE_C = "C";
-	private static final String STATE_D = "D";
-	private static final String STATE_E = "E";
-	private static final String STATE_F = "F";
+	private static final String check_painting_request = "A";
+	private static final String wait_painting_request = "B";
+	private static final String check_available_object = "C";
+	private static final String take_object = "D";
+	private static final String painting = "E";
+	private static final String deliver_object = "F";
 
 	public int paintingRequest = 1;
 	public String color = "red";
@@ -32,38 +32,38 @@ public class FSMPaintingAgent extends Agent{
 					}
 				};
 				// Register state A (first state)
-				fsm.registerFirstState(new start(), STATE_A);
+				fsm.registerFirstState(new Satrt(), check_painting_request);
 				
 				// Register state B
-				fsm.registerState(new wait(), STATE_B);
+				fsm.registerState(new Wait(), wait_painting_request);
 				
 				// Register state C
-				fsm.registerState(new checkScrews(), STATE_C);
+				fsm.registerState(new CheckObject(), check_available_object);
 				
 				// Register state D
-				fsm.registerState(new takeScrew(), STATE_D);
+				fsm.registerState(new Take(), take_object);
 				
 				// Register state E
-				fsm.registerState(new paint(), STATE_E);
+				fsm.registerState(new Paint(), painting);
 				
 				// Register state F (final state)
-				fsm.registerState(new deliverScrew(), STATE_F);
+				fsm.registerState(new Deliver(), deliver_object);
 
 				// Register the transitions
-				fsm.registerTransition(STATE_A, STATE_C, 1);
-				fsm.registerTransition(STATE_A, STATE_B, 0);
-				fsm.registerDefaultTransition(STATE_B, STATE_A);				
-				fsm.registerTransition(STATE_C, STATE_C, 0);
-				fsm.registerTransition(STATE_C, STATE_D, 1);				
-				fsm.registerDefaultTransition(STATE_D, STATE_E);				
-				fsm.registerDefaultTransition(STATE_E, STATE_F );				
-				fsm.registerDefaultTransition(STATE_F, STATE_A);
+				fsm.registerTransition(check_painting_request, check_available_object, 1);
+				fsm.registerTransition(check_painting_request, wait_painting_request, 0);
+				fsm.registerDefaultTransition(wait_painting_request, check_painting_request);				
+				fsm.registerTransition(check_available_object, check_available_object, 0);
+				fsm.registerTransition(check_available_object, take_object, 1);				
+				fsm.registerDefaultTransition(take_object, painting);				
+				fsm.registerDefaultTransition(painting, deliver_object );				
+				fsm.registerDefaultTransition(deliver_object, check_painting_request);
 				
 				addBehaviour(fsm);
 			}
 			
 			
-	private class start extends OneShotBehaviour {
+	private class Satrt extends OneShotBehaviour {
 		public void action() {
 			System.out.println("Check painting request ");
 			if (paintingRequest > 0)
@@ -77,7 +77,7 @@ public class FSMPaintingAgent extends Agent{
 }
 	}
 	
-	private class wait extends OneShotBehaviour {
+	private class Wait extends OneShotBehaviour {
 		public void action() {
 			System.out.println("Waiting for painting request  ");
 			try {
@@ -89,9 +89,9 @@ public class FSMPaintingAgent extends Agent{
 
 		}
 	}
-	private class checkScrews extends OneShotBehaviour {
+	private class CheckObject extends OneShotBehaviour {
 		public void action() {
-			System.out.println("Check if there is screws ready to print ");
+			System.out.println("Check if there is screws ready to paint ");
 			if (screws > 0)
 				paint = 1;
 			else 
@@ -102,14 +102,14 @@ public class FSMPaintingAgent extends Agent{
 }
 	}
 	
-	private class takeScrew extends OneShotBehaviour {
+	private class Take extends OneShotBehaviour {
 		public void action() {
 			System.out.println("Take a screw from transport agent  ");
 
 		}
 	}
 	
-	private class paint extends OneShotBehaviour {
+	private class Paint extends OneShotBehaviour {
 		public void action() {
 			System.out.println("Painting  "+color + " screw");
 			try {
@@ -122,7 +122,7 @@ public class FSMPaintingAgent extends Agent{
 		}
 		}
 	
-	private class deliverScrew extends OneShotBehaviour {
+	private class Deliver extends OneShotBehaviour {
 		public void action() {
 			System.out.println(color + " screw painted");
 			

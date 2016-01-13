@@ -7,13 +7,13 @@ import java.util.*;
 
 public class FSMTransportAgent extends Agent{
 	
-	private static final String STATE_A = "A";
-	private static final String STATE_B = "B";
-	private static final String STATE_C = "C";
-	private static final String STATE_D = "D";
-	private static final String STATE_E = "E";
-	private static final String STATE_F = "F";
-	private static final String STATE_G = "G";
+	private static final String check_request = "A";
+	private static final String wait_request = "B";
+	private static final String take_uncolored_object = "C";
+	private static final String deliver_uncolored_object = "D";
+	private static final String check_colored_object = "E";
+	private static final String deliver_colored_object = "F";
+	private static final String wait_painting = "G";
 
 
 
@@ -37,36 +37,36 @@ public class FSMTransportAgent extends Agent{
 					}
 				};
 				// Register state A (first state)
-				fsm.registerFirstState(new start(), STATE_A);
+				fsm.registerFirstState(new Start(), check_request);
 				
 				// Register state B
-				fsm.registerState(new wait(), STATE_B);
+				fsm.registerState(new Wait(), wait_request);
 				
 				// Register state C
-				fsm.registerState(new takeUncoloredScrew(), STATE_C);
+				fsm.registerState(new TakeUncoloredObject(), take_uncolored_object);
 				
 				// Register state D
-				fsm.registerState(new deliverUncoloredScrew(), STATE_D);
+				fsm.registerState(new DeliverUncoloredObject(), deliver_uncolored_object);
 				
-				fsm.registerState(new checkColoredScrew(), STATE_E);
+				fsm.registerState(new CheckColoredObject(), check_colored_object);
 
-				fsm.registerState(new deliverColoredScrew(), STATE_F);
-				fsm.registerState(new wait(), STATE_G);
+				fsm.registerState(new DeliverColoredObject(), deliver_colored_object);
+				fsm.registerState(new Wait(), wait_painting);
 
 				
 
 				// Register the transitions
-				fsm.registerTransition(STATE_A, STATE_C, 1);
-				fsm.registerTransition(STATE_A, STATE_B, 0);
-				fsm.registerDefaultTransition(STATE_B, STATE_A);				
+				fsm.registerTransition(check_request, take_uncolored_object, 1);
+				fsm.registerTransition(check_request, wait_request, 0);
+				fsm.registerDefaultTransition(wait_request, check_request);				
 				//fsm.registerTransition(STATE_C, STATE_C, 0);
-				fsm.registerDefaultTransition(STATE_C, STATE_D);	
-				fsm.registerDefaultTransition(STATE_D, STATE_E);	
+				fsm.registerDefaultTransition(take_uncolored_object, deliver_uncolored_object);	
+				fsm.registerDefaultTransition(deliver_uncolored_object, check_colored_object);	
 
-				fsm.registerTransition(STATE_E, STATE_G, 0);
-				fsm.registerTransition(STATE_E, STATE_F, 1);
-				fsm.registerDefaultTransition(STATE_G, STATE_E);	
-				fsm.registerDefaultTransition(STATE_F, STATE_A);				
+				fsm.registerTransition(check_colored_object, wait_painting, 0);
+				fsm.registerTransition(check_colored_object, deliver_colored_object, 1);
+				fsm.registerDefaultTransition(wait_painting, check_colored_object);	
+				fsm.registerDefaultTransition(deliver_colored_object, check_request);				
 
 
 		
@@ -75,7 +75,7 @@ public class FSMTransportAgent extends Agent{
 			}
 			
 			
-	private class start extends OneShotBehaviour {
+	private class Start extends OneShotBehaviour {
 		public void action() {
 			System.out.println("Check painting request ");
 			if (paintingRequest > 0)
@@ -89,7 +89,7 @@ public class FSMTransportAgent extends Agent{
 }
 	}
 	
-	private class wait extends OneShotBehaviour {
+	private class Wait extends OneShotBehaviour {
 		public void action() {
 			System.out.println("Waiting for painting request  ");
 			try {
@@ -101,7 +101,7 @@ public class FSMTransportAgent extends Agent{
 
 		}
 	}
-	private class takeUncoloredScrew extends OneShotBehaviour {
+	private class TakeUncoloredObject extends OneShotBehaviour {
 		public void action() {
 			System.out.println("Take uncolored screw");
 			/*
@@ -117,7 +117,7 @@ public class FSMTransportAgent extends Agent{
 			
 	}
 	
-	private class deliverUncoloredScrew extends OneShotBehaviour {
+	private class DeliverUncoloredObject extends OneShotBehaviour {
 		public void action() {
 			System.out.println("Deliver uncolored screw to the painting agent  ");
 
@@ -125,7 +125,7 @@ public class FSMTransportAgent extends Agent{
 	}
 	
 	
-	private class checkColoredScrew extends OneShotBehaviour {
+	private class CheckColoredObject extends OneShotBehaviour {
 		public void action() {
 			System.out.println("Check painting request ");
 			if (screwPainted)
@@ -138,7 +138,7 @@ public class FSMTransportAgent extends Agent{
 }
 	}
 	
-	private class deliverColoredScrew extends OneShotBehaviour {
+	private class DeliverColoredObject extends OneShotBehaviour {
 		public void action() {
 			System.out.println("Deliver colored screw from the painting agent  ");
 
