@@ -24,13 +24,13 @@ public class DummyWorker extends Agent {
 		PAINTER_GREEN,
 		TURNER
 	}
-	String orderAgentName;
+	String priortyQueAgentName;
 	AgentRole role;
 	protected void setup(){
 		Object[] args = getArguments();
-		orderAgentName = null;
+		priortyQueAgentName = null;
 		if(args != null && args.length > 0){
-			orderAgentName = (String)args[0];
+			priortyQueAgentName = (String)args[0];
 		}else{
 			System.out.println("Order agent name not given!");
 			System.exit(-1);
@@ -41,7 +41,7 @@ public class DummyWorker extends Agent {
 			System.out.println("Error: role not given");
 			System.exit(-1);
 		}
-		lookForJob(orderAgentName);
+		lookForJob(priortyQueAgentName);
 	}
 	private void registerAs(String role){
 		if(role.equals(AgentRole.TRANSPORTER.toString())){
@@ -62,11 +62,6 @@ public class DummyWorker extends Agent {
 	  		ServiceDescription sd = new ServiceDescription();
 	  		sd.setName(getLocalName());
 	  		sd.setType(this.role.toString());
-	  		// Agents that want to use this service need to "know" the weather-forecast-ontology
-//	  		sd.addOntologies("weather-forecast-ontology");
-	  		// Agents that want to use this service need to "speak" the FIPA-SL language
-//	  		sd.addOntologies(FIPANames.ContentLanguage.FIPA_SL);
-//	  		sd.addProperties(new Property("country", "Italy"));
 	  		dfd.addServices(sd);
 	  		
 	  		DFService.register(this, dfd);
@@ -75,15 +70,16 @@ public class DummyWorker extends Agent {
 	  		fe.printStackTrace();
 	  	}
 	}
-	private void lookForJob(String orderGenratorName){
+	private void lookForJob(String priortyQueName){
 		if(role != AgentRole.TRANSPORTER){
 			return;
 		}
 		this.addBehaviour(new OneShotBehaviour() {
 			@Override
 			public void action() {
-				ACLMessage cfp_msg = new ACLMessage(ACLMessage.CFP);
-				cfp_msg.addReceiver(new AID(orderGenratorName,AID.ISLOCALNAME));
+				ACLMessage cfp_msg = new ACLMessage(ACLMessage.REQUEST);
+				cfp_msg.setProtocol(PriortyQueAgent.PriortyQueActions.ACQUIRE_ORDER.toString());
+				cfp_msg.addReceiver(new AID(priortyQueName,AID.ISLOCALNAME));
 				this.getAgent().send(cfp_msg);
 				
 			}
@@ -92,20 +88,22 @@ public class DummyWorker extends Agent {
 			private boolean isDone=false;
 			@Override
 			public void action() {
-				MessageTemplate prop_tmp = MessageTemplate.or(MessageTemplate.MatchPerformative(ACLMessage.PROPOSE),
-								MessageTemplate.MatchPerformative(ACLMessage.REFUSE));
+				MessageTemplate prop_tmp = MessageTemplate.MatchProtocol(PriortyQueAgent.PriortyQueActions.ACQUIRE_ORDER.toString());
+//								MessageTemplate.MatchPerformative(ACLMessage.REFUSE));
 				ACLMessage prop_msg = this.getAgent().receive(prop_tmp);
 				if(prop_msg != null){
-					if(prop_msg.getPerformative() == ACLMessage.PROPOSE){
+					if(prop_msg.getPerformative() == ACLMessage.AGREE){
 						isDone = true;
 						System.out.println("Recived "+prop_msg.getContent());
-						acceptTheJob(Order.valueOf(prop_msg.getContent()));
+						Order ord = Order.valueOf(prop_msg.getContent());
+						ord.setHolderName(getLocalName());
+						doWork(ord);
 					}else if(prop_msg.getPerformative() == ACLMessage.REFUSE){
 						System.out.println("Refused!");
 						isDone = false;
 						getAgent().addBehaviour(new WakerBehaviour(getAgent(),1000) {
 							protected void handleElapsedTimeout(){
-								lookForJob(orderGenratorName);
+								lookForJob(priortyQueName);
 							}
 						});
 					}
@@ -126,7 +124,7 @@ public class DummyWorker extends Agent {
 			public void action() {
 				ACLMessage job_acq_msg = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
 				job_acq_msg.setContent(job.toString());
-				job_acq_msg.addReceiver(new AID(orderAgentName,AID.ISLOCALNAME));
+				job_acq_msg.addReceiver(new AID(priortyQueAgentName,AID.ISLOCALNAME));
 				send(job_acq_msg);
 			}
 		});
@@ -150,7 +148,7 @@ public class DummyWorker extends Agent {
 					}else if(contract_msg.getPerformative() == ACLMessage.DISCONFIRM){
 						addBehaviour(new WakerBehaviour(this.getAgent(),1000) {
 							protected void handleElapsedTimeout() {
-								lookForJob(orderAgentName);
+								lookForJob(priortyQueAgentName);
 							}
 						});
 					}
@@ -165,17 +163,17 @@ public class DummyWorker extends Agent {
 		addBehaviour(new WakerBehaviour(this, work_time) {
 			protected void handleElapsedTimeout() {
 				OutwardQueGUI.getInstance().add(job);
-				lookForJob(orderAgentName);
+				lookForJob(priortyQueAgentName);
 			}
 		});
 		System.out.println(getLocalName()+" Done with "+job.toString());
 	}
 	
 	protected void takeDown() 
-    {
-       try { DFService.deregister(this); }
-       catch (Exception e) {}
-    }
+	{
+	   try { DFService.deregister(this); }
+	   catch (Exception e) {}
+	}
 	private DFAgentDescription[] searchForPainter(Order.ObjectColor color){
 		DFAgentDescription dfd = new DFAgentDescription();
         ServiceDescription sd  = new ServiceDescription();
