@@ -1,6 +1,7 @@
 import jade.core.Agent;
 import jade.core.AID;
 import jade.lang.acl.ACLMessage;
+import jade.lang.acl.MessageTemplate;
 import jade.core.behaviours.*;
 
 import java.util.*;
@@ -14,8 +15,9 @@ public class FSMPaintingAgent extends Agent{
 	private static final String painting = "E";
 	private static final String deliver_object = "F";
 
+	private ACLMessage receivedMsg;
 	public int paintingRequest = 1;
-	public String color = "red";
+	public String color;
 	public int paint = 0;
 	public int screws = 1;
     
@@ -64,13 +66,19 @@ public class FSMPaintingAgent extends Agent{
 			
 			
 	private class Satrt extends OneShotBehaviour {
+		public static final String RECV_MSG = "received-message";
 		public void action() {
+			receivedMsg = myAgent.receive();
 			System.out.println("Check painting request ");
-			if (paintingRequest > 0)
+			if (receivedMsg!= null) {
 				paint = 1;
-			else 
+				System.out.println(receivedMsg);
+				getDataStore().put(RECV_MSG, receivedMsg);
+				color = receivedMsg.getContent();
+				}
+				else {
 				paint = 0;
-			paintingRequest = paintingRequest - 1;
+				}
 		}
 		public int onEnd() {
 			return paint;

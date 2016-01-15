@@ -1,8 +1,10 @@
 import jade.core.Agent;
 import jade.core.AID;
 import jade.lang.acl.ACLMessage;
+import jade.lang.acl.MessageTemplate;
 import jade.core.behaviours.*;
 
+import java.io.IOException;
 import java.util.*;
 
 public class FSMTransportAgent extends Agent{
@@ -16,10 +18,11 @@ public class FSMTransportAgent extends Agent{
 	private static final String wait_painting = "G";
 
 
-
+	private ACLMessage receivedMsg;
 	public int paintingRequest = 1;
 	public String color = "red";
 	public int paint = 0;
+	public String obj;
 	public boolean transportAgentStatus = true;
 	public boolean screwPainted = true;
 	public int deliverScrew = 0;
@@ -72,17 +75,27 @@ public class FSMTransportAgent extends Agent{
 		
 				
 				addBehaviour(fsm);
+				
+				
+
+				
 			}
 			
 			
 	private class Start extends OneShotBehaviour {
+		public static final String RECV_MSG = "received-message";
 		public void action() {
+			receivedMsg = myAgent.receive();
 			System.out.println("Check painting request ");
-			if (paintingRequest > 0)
+			if (receivedMsg!= null) {
 				paint = 1;
-			else 
+				System.out.println(receivedMsg);
+				getDataStore().put(RECV_MSG, receivedMsg);
+				obj = receivedMsg.getContent();
+				}
+				else {
 				paint = 0;
-			paintingRequest = paintingRequest - 1;
+				}
 		}
 		public int onEnd() {
 			return paint;
@@ -122,6 +135,7 @@ public class FSMTransportAgent extends Agent{
 			System.out.println("Deliver uncolored screw to the painting agent  ");
 
 		}
+		
 	}
 	
 	

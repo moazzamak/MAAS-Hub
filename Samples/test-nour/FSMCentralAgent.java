@@ -12,15 +12,33 @@ public class FSMCentralAgent extends Agent{
 	private static final String STATE_C = "C";
 	private static final String STATE_D = "D";
 
+	private ACLMessage sentMsg=new ACLMessage(ACLMessage.INFORM);;
 
 	public int paintingRequest = 1;
-	public String color = "red";
 	public int paint = 0;
 	public boolean transportAgentStatus = true;
+	public String color = "red";
+	public String obj = "screw";
     
 	
 	protected void setup() {
+		
 	
+	//get color and object from args
+		/*
+		Object[] args = getArguments();
+		if (args != null && args.length > 0) {
+		color = (String) args[0];
+		obj = (String) args[1];
+		System.out.println("Painting a "+ color + obj);
+		try {
+			Thread.sleep(4000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		}
+		*/
 		//finite state machine 
 				FSMBehaviour fsm = new FSMBehaviour(this){
 					public int onEnd(){
@@ -58,13 +76,15 @@ public class FSMCentralAgent extends Agent{
 			
 			
 	private class start extends OneShotBehaviour {
+
 		public void action() {
 			System.out.println("Check painting request ");
-			if (paintingRequest > 0)
+			if (color != null)
 				paint = 1;
 			else 
 				paint = 0;
 			paintingRequest = paintingRequest - 1;
+		
 		}
 		public int onEnd() {
 			return paint;
@@ -87,8 +107,12 @@ public class FSMCentralAgent extends Agent{
 		public void action() {
 			System.out.println("Tell transport agent to take a screw");
 			
-			if (transportAgentStatus == true)
+			if (transportAgentStatus == true){
 				paint = 1;
+			sentMsg.addReceiver(new AID("FSMTransportAgent", AID.ISLOCALNAME));
+			sentMsg.setContent(obj);
+			send(sentMsg);
+			System.out.println(sentMsg);}
 			else 
 				paint = 0;
 		}
@@ -101,6 +125,10 @@ public class FSMCentralAgent extends Agent{
 	private class sendPaintRequest extends OneShotBehaviour {
 		public void action() {
 			System.out.println("Send request with color to painting agent  ");
+			sentMsg.addReceiver(new AID("FSMPaintingAgent", AID.ISLOCALNAME));
+			sentMsg.setContent(color);
+			send(sentMsg);
+			System.out.println(sentMsg);
 
 		}
 	}
