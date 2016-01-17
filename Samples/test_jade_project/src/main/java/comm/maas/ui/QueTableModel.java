@@ -7,14 +7,16 @@ import javax.swing.table.AbstractTableModel;
 import com.maas.domain.Order;
 
 public class QueTableModel extends AbstractTableModel {
-	
-	Vector<Order> orders; 
-	public QueTableModel(){
-		orders=new Vector<Order>();
+
+	Vector<Order> orders;
+
+	public QueTableModel() {
+		orders = new Vector<Order>();
 	}
+
 	@Override
 	public int getRowCount() {
-		
+
 		return orders.size();
 	}
 
@@ -40,20 +42,21 @@ public class QueTableModel extends AbstractTableModel {
 
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {
-		return orders.get(rowIndex).getPropertyString(Order.PROPERTIES[columnIndex]);
+		return orders.get(rowIndex).getPropertyString(
+				Order.PROPERTIES[columnIndex]);
 	}
 
 	@Override
 	public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-		if(rowIndex < orders.size()){
-			orders.elementAt(rowIndex).copyValues((Order)aValue);
-		}
-		else{
-			orders.add((Order)aValue);
+		if (rowIndex < orders.size()) {
+			orders.elementAt(rowIndex).copyValues((Order) aValue);
+		} else {
+			orders.add((Order) aValue);
 		}
 	}
-	public void add(Order o){
+
+	public void add(Order o) {
 		orders.add(o);
-		this.fireTableRowsInserted(getRowCount() -1, getRowCount());
+		this.fireTableRowsInserted(getRowCount() - 1, getRowCount());
 	}
 }

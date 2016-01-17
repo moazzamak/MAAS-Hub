@@ -93,19 +93,6 @@ public class PriortyQueAgent extends Agent {
 					throw new RefuseException("Unable to Add Order, " + request.getContent());
 				}
 			}
-			
-//			protected ACLMessage prepareResultNotification(ACLMessage request, ACLMessage response) throws FailureException {
-//				if (performAction()) {
-//					System.out.println("Agent "+getLocalName()+": Action successfully performed");
-//					ACLMessage inform = request.createReply();
-//					inform.setPerformative(ACLMessage.INFORM);
-//					return inform;
-//				}
-//				else {
-//					System.out.println("Agent "+getLocalName()+": Action failed");
-//					throw new FailureException("unexpected-error");
-//				}	
-//			}
 		});
 	}
 	private void addOrderRemovingBehaviour(){
@@ -138,19 +125,6 @@ public class PriortyQueAgent extends Agent {
 					throw new RefuseException("check-failed");
 				}
 			}
-			
-//			protected ACLMessage prepareResultNotification(ACLMessage request, ACLMessage response) throws FailureException {
-//				if (performAction()) {
-//					System.out.println("Agent "+getLocalName()+": Action successfully performed");
-//					ACLMessage inform = request.createReply();
-//					inform.setPerformative(ACLMessage.INFORM);
-//					return inform;
-//				}
-//				else {
-//					System.out.println("Agent "+getLocalName()+": Action failed");
-//					throw new FailureException("unexpected-error");
-//				}	
-//			}
 		});
 	}
 	private void informOrderHolder(Order o){

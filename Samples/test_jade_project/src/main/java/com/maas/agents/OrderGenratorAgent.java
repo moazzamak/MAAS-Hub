@@ -106,33 +106,6 @@ public class OrderGenratorAgent extends Agent {
 		if(cfp_msg != null){
 			System.out.println("Call for proposal recived form "+cfp_msg.getSender().getLocalName());
 			orderInProcess = false;
-//			ACLMessage job_msg = cfp_msg.createReply();
-//			if(this.seeNextOrder() != null){
-//				System.out.println("Job Available!");
-//				job_msg.setPerformative(ACLMessage.PROPOSE);
-//				job_msg.setContent(this.seeNextOrder().toString());
-//			}else{
-//				System.out.println("No Job Available!");
-//				job_msg.setPerformative(ACLMessage.REFUSE);
-//				job_msg.setContent("No Job Available!");
-//			}
-//			bhv.getAgent().send(job_msg);
-		}
-	}
-	private void acceptJobProposal(){
-		MessageTemplate accept_mt = MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL);
-		ACLMessage acc_msg= this.receive(accept_mt);
-		if(acc_msg != null){
-			System.out.println("Recived Acceptance from "+acc_msg.getSender().getLocalName());
-			Order the_order = Order.valueOf(acc_msg.getContent());
-			ACLMessage acc_reply = acc_msg.createReply();
-			if(acquireOrder(the_order)){
-				acc_reply.setPerformative(ACLMessage.CONFIRM);
-				acc_reply.setContent(the_order.toString());
-			}else{
-				acc_reply.setPerformative(ACLMessage.DISCONFIRM);
-			}
-			send(acc_reply);
 		}
 	}
 	private Order genrateRandomOrder(){
