@@ -31,7 +31,6 @@ public class OutwardQueGUI extends JFrame {
 	}
 	public static OutwardQueGUI getInstance(){
 		if(classInstance == null){
-			System.out.println("Creating New Instance of GUI");
 			classInstance = new OutwardQueGUI();
 		}
 		return classInstance;
@@ -39,7 +38,6 @@ public class OutwardQueGUI extends JFrame {
 	public void setVisible(){
 		if(!classInstance.isVisible()){
 			classInstance.setVisible(true);
-			System.out.println("Setting GUI Visible!");
 		}
 	}
 	public void add(Order order){

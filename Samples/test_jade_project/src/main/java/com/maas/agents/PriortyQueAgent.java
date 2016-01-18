@@ -9,7 +9,6 @@ import jade.core.AID;
 import jade.core.Agent;
 import jade.domain.DFService;
 import jade.domain.FIPAException;
-import jade.domain.FIPANames;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.NotUnderstoodException;
 import jade.domain.FIPAAgentManagement.RefuseException;
@@ -28,11 +27,11 @@ public class PriortyQueAgent extends Agent {
 		que = new PriorityQueue<Order>(10,new Comparator<Order>() {
 			@Override
 			public int compare(Order o1, Order o2) {
-				return o1.getPriorty() - o2.getPriorty();
+				return o2.getPriorty() - o1.getPriorty();
 			}
 		});
-		
-//		registerAsPriortyQue();
+//		log = Logger.getJADELogger(getLocalName());
+		registerAsPriortyQue();
 		addOrderAddingBehaviour();
 		addOrderRemovingBehaviour();
 	}
@@ -57,11 +56,13 @@ public class PriortyQueAgent extends Agent {
 	  	}
 	}
 	private boolean addOrder(Order o){
+		printQue();
 		if(o != null){
 			return que.add(o);
 		}else{
 			return false;
 		}
+		
 	}
 	private boolean removeOrder(Order o){
 		if (o != null){
@@ -71,7 +72,7 @@ public class PriortyQueAgent extends Agent {
 		}
 	}
 	private void addOrderAddingBehaviour(){
-		System.out.println("Agent "+getLocalName()+" waiting for adding orders...");
+		log(" waiting for adding orders...");
 		MessageTemplate template = 
 //				MessageTemplate.and(MessageTemplate.MatchContent("Order"),
 			  			MessageTemplate.and(
@@ -81,22 +82,23 @@ public class PriortyQueAgent extends Agent {
 		addBehaviour(new AchieveREResponder(this,template){
 			
 			protected ACLMessage prepareResponse(ACLMessage request) throws NotUnderstoodException, RefuseException {
-				System.out.println("Agent "+getLocalName()+": ADD REQUEST received from "+request.getSender().getName()+". Action is "+request.getContent());
+				log( "ADD REQUEST received from "+request.getSender().getLocalName()+". Action is "+request.getContent());
 				if (addOrder(Order.valueOf(request.getContent()))) {
-					System.out.println("Agent "+getLocalName()+": Agree");
+					printQue();
+					log("Sending "+request.getSender().getLocalName()+ " AGREE");
 					ACLMessage agree = request.createReply();
 					agree.setPerformative(ACLMessage.AGREE);
 					return agree;
 				}else {
 					// We refuse to perform the action
-					System.out.println("Agent "+getLocalName()+": Refuse");
+					log("Sending "+request.getSender().getLocalName()+" REFUSE");
 					throw new RefuseException("Unable to Add Order, " + request.getContent());
 				}
 			}
 		});
 	}
 	private void addOrderRemovingBehaviour(){
-		System.out.println("Agent "+getLocalName()+" waiting for aquire Requests...");
+		log("waiting for aquire Requests...");
 		MessageTemplate template = 
 //		MessageTemplate.and(MessageTemplate.MatchContent("Order"),
 	  			MessageTemplate.and(
@@ -106,14 +108,14 @@ public class PriortyQueAgent extends Agent {
 		addBehaviour(new AchieveREResponder(this, template) {
 			protected ACLMessage prepareResponse(ACLMessage request) throws NotUnderstoodException, RefuseException {
 				if(que.peek() == null){
-					System.out.println("Agent "+getLocalName()+": Refuse");
+					log("Sending "+request.getSender().getLocalName()+" Refuse");
 					throw new RefuseException("check-failed");
 				}
-				System.out.println("Agent "+getLocalName()+": ACQUIRE_ORDER REQUEST received from "+request.getSender().getName()+". Action is "+que.peek().toString());
+				log("ACQUIRE_ORDER REQUEST received from "+request.getSender().getName()+". Action is "+que.peek().toString());
 				Order the_order = que.peek();
 				
 				if (removeOrder(the_order)) {
-					System.out.println("Agent "+getLocalName()+": Agree");
+					log("Sending "+request.getSender().getLocalName()+" Agree");
 					informOrderHolder(the_order);
 					ACLMessage agree = request.createReply();
 					agree.setPerformative(ACLMessage.AGREE);
@@ -121,7 +123,7 @@ public class PriortyQueAgent extends Agent {
 					return agree;
 				}else {
 					// We refuse to perform the action
-					System.out.println("Agent "+getLocalName()+": Refuse");
+					log("Sending "+request.getSender().getLocalName()+" Refuse");
 					throw new RefuseException("check-failed");
 				}
 			}
@@ -133,5 +135,14 @@ public class PriortyQueAgent extends Agent {
 		inform.setContent(o.toString());
 		inform.setProtocol(PriortyQueActions.ACQUIRE_ORDER.toString());
 		send(inform);
+	}
+	private void printQue(){
+		log("printing que : ");
+		for(Order o : que){
+			log(o.toString());
+		}
+	}
+	private void log(String msg){
+		System.out.println("["+getLocalName()+"]"+msg);
 	}
 }

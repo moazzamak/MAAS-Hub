@@ -12,6 +12,10 @@ import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.TickerBehaviour;
+import jade.domain.DFService;
+import jade.domain.FIPAException;
+import jade.domain.FIPAAgentManagement.DFAgentDescription;
+import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 
@@ -32,7 +36,7 @@ public class OrderGenratorAgent extends Agent {
 	 * Agent Setup
 	 */
 	protected void setup() {
-		System.out.println("Adding ticker behaviour");
+		log("Adding ticker behaviour");
 		Object[] args = getArguments();
 		orders = new LinkedList<Order>();
 		currentOrderId = 1;
@@ -40,20 +44,21 @@ public class OrderGenratorAgent extends Agent {
 		int sec = -1;
 		if(args != null && args.length > 1){
 			sec = Integer.valueOf((String)args[0]);
-			System.out.println("time between orders : " + String.valueOf(sec));
+			log("time between orders : " + String.valueOf(sec));
 			priortyQueName = (String)args[1];
-			System.out.println("Priorty Que Name : "+ priortyQueName);
+			log("Priorty Que Name : "+ priortyQueName);
 		}else{
 			System.exit(-1);
 		}
 		addBehaviour(new TickerBehaviour(this, sec) {
 			protected void onTick() {
 				Order order = genrateRandomOrder();
-				orders.add(order);
-				currentOrderId++;
-				
+//				if(servicesAreAvailable(order)){
+					orders.add(order);
+					currentOrderId++;
+//				}
 				if(seeRecentlyAddedOrder() != null){
-					System.out.println("Genrated "+seeRecentlyAddedOrder().toString());
+					log("Genrated "+seeRecentlyAddedOrder().toString());
 				}
 			}
 			
@@ -85,7 +90,7 @@ public class OrderGenratorAgent extends Agent {
 					
 					Order ord = seeNextOrder();
 					if(ord != null){
-						System.out.println("Sending REQUEST to "+priortyQueName);
+						log("Sending REQUEST to "+priortyQueName);
 						ACLMessage job_msg = new ACLMessage(ACLMessage.REQUEST);
 						job_msg.setProtocol(PriortyQueActions.ADD_ORDER.toString());
 						job_msg.setContent(ord.toString());
@@ -104,7 +109,7 @@ public class OrderGenratorAgent extends Agent {
 								 MessageTemplate.MatchPerformative(ACLMessage.INFORM));
 		ACLMessage cfp_msg = this.receive(cfp_mt);
 		if(cfp_msg != null){
-			System.out.println("Call for proposal recived form "+cfp_msg.getSender().getLocalName());
+			log("Call for proposal recived form "+cfp_msg.getSender().getLocalName());
 			orderInProcess = false;
 		}
 	}
@@ -152,5 +157,40 @@ public class OrderGenratorAgent extends Agent {
 			}
 		}
 		return false;
+	}
+	public boolean servicesAreAvailable(Order order){
+		DFAgentDescription[] painters = searchForService("PAINTER_"+order.getColorString());
+		if(painters.length == 0){
+			return false;
+		}
+		if(order.getObjectType() == Order.ObjectType.NUT_SCREW){
+			DFAgentDescription[] fasteners = searchForService("FASTENER");
+			if(fasteners.length == 0){
+				return false;
+			}
+		}
+		return true;
+	}
+	public DFAgentDescription[] searchForService(String service) {
+		log("Searching For : " + service);
+		DFAgentDescription dfd = new DFAgentDescription();
+		ServiceDescription sd = new ServiceDescription();
+		sd.setType(service);
+		dfd.addServices(sd);
+
+		DFAgentDescription[] results;
+		try {
+			results = DFService.search(this, dfd);
+			log(results.length + " results");
+			for (DFAgentDescription result : results)
+				log("Found " + result.getName());
+			return results;
+		} catch (FIPAException e) {
+			log(e.getStackTrace().toString());
+		}
+		return null;
+	}
+	private void log(String msg){
+		System.out.println("["+getLocalName()+"]"+msg);
 	}
 }

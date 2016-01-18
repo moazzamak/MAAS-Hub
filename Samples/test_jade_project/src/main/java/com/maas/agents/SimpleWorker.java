@@ -1,13 +1,14 @@
 package com.maas.agents;
 
+
 import com.maas.agents.PriortyQueAgent.PriortyQueActions;
 import com.maas.domain.Order;
 import com.maas.domain.Order.ObjectType;
-import com.maas.utils.RandomNumberGenrator;
 
 import comm.maas.ui.OutwardQueGUI;
 import jade.core.AID;
 import jade.core.Agent;
+import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.WakerBehaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAException;
@@ -16,6 +17,7 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import jade.proto.AchieveREInitiator;
+import jade.proto.states.MsgReceiver;
 
 public class SimpleWorker extends Agent {
 	public enum AgentRole {
@@ -25,22 +27,29 @@ public class SimpleWorker extends Agent {
 	String priortyQueAgentName;
 	AgentRole role;
 	boolean busy = false;
-
+	Order transporterCurrentJob;
+	private final int TIME_TAKEN_TO_MOVE = 3000;
+	private final int TIME_TAKEN_TO_PAINT = 1000;
+	private final int TIME_TAKEN_TO_FASTEN = 1000;
+	public SimpleWorker(){
+		
+	}
 	protected void setup() {
 		Object[] args = getArguments();
 		priortyQueAgentName = null;
 		if (args != null && args.length > 0) {
 			priortyQueAgentName = (String) args[0];
 		} else {
-			System.out.println("Order agent name not given!");
+			log("Order agent name not given!");
 			System.exit(-1);
 		}
 		if (args.length > 1) {
 			registerAs((String) args[1]);
 		} else {
-			System.out.println("Error: role not given");
+			log("Error: role not given");
 			System.exit(-1);
 		}
+		transporterCurrentJob = null;
 		if (role == AgentRole.TRANSPORTER)
 			communicatePriortyQue(priortyQueAgentName);
 		else {
@@ -62,9 +71,8 @@ public class SimpleWorker extends Agent {
 		} else {
 			System.exit(-1);
 		}
-		System.out.println("Agent " + getLocalName()
-				+ " registering service \"" + this.role.toString()
-				+ "\" of type \"weather-forecast\"");
+		log("Agent " + getLocalName()
+				+ " registering service " + this.role.toString());
 		try {
 			DFAgentDescription dfd = new DFAgentDescription();
 			dfd.setName(getAID());
@@ -92,17 +100,22 @@ public class SimpleWorker extends Agent {
 		this.addBehaviour(new AchieveREInitiator(this, msg) {
 
 			protected void handleAgree(ACLMessage agree) {
-				System.out.println("Agent " + agree.getSender().getName()
+				log(agree.getSender().getLocalName()
 						+ " sent " + agree.getContent());
 				Order job = Order.valueOf(agree.getContent());
 				job.setHolderName(getLocalName());
+				transporterCurrentJob=job;
 				doWork(job);
+				String nextRole = getNextWorkerRole(job);
+//				DFAgentDescription[] results = searchForService(getAgent(),nextRole);
+//				sendJobToAgent(job, results[0].getName());
+//				sendJobToWorkers(transporterCurrentJob, results,0);
+				transportToWorker(nextRole);				
 				communicatePriortyQue(priortyQueName);
 			}
 
 			protected void handleRefuse(ACLMessage refuse) {
-				System.out.println("Agent " + refuse.getSender().getName()
-						+ " refused!");
+				log(refuse.getSender().getLocalName()+ " refused!");
 				getAgent().addBehaviour(new WakerBehaviour(getAgent(), 1000) {
 					protected void handleElapsedTimeout() {
 						communicatePriortyQue(priortyQueName);
@@ -114,51 +127,61 @@ public class SimpleWorker extends Agent {
 
 	@SuppressWarnings("serial")
 	private void waitForJob() {
-		MessageTemplate template = MessageTemplate.and(MessageTemplate
-				.MatchProtocol(PriortyQueActions.ADD_ORDER.toString()),
-				MessageTemplate.MatchPerformative(ACLMessage.REQUEST));
-		ACLMessage job_msg = receive(template);
-		if (job_msg != null) {
-			System.out.println("Recived Job from "
-					+ job_msg.getSender().getLocalName() + " "
-					+ job_msg.getContent());
-			doWork(Order.valueOf(job_msg.getContent()));
-		}
-		addBehaviour(new WakerBehaviour(this, 500) {
-			protected void handleElapsedTimeout() {
-				waitForJob();
+		addBehaviour(new Behaviour() {
+			
+			@Override
+			public boolean done() {
+				// TODO Auto-generated method stub
+				return false;
+			}
+			
+			@Override
+			public void action() {
+				MessageTemplate template = MessageTemplate.and(MessageTemplate
+						.MatchProtocol(PriortyQueActions.ADD_ORDER.toString()),
+						MessageTemplate.MatchPerformative(ACLMessage.REQUEST));
+				ACLMessage job_msg = receive(template);
+				if (job_msg != null) {
+					log("Recived Job from "
+							+ job_msg.getSender().getLocalName() + " "
+							+ job_msg.getContent());
+					if(!busy){
+						ACLMessage reply = job_msg.createReply();
+						reply.setPerformative(ACLMessage.AGREE);
+						send(reply);
+						doWork(Order.valueOf(job_msg.getContent()));
+					}else{
+						ACLMessage reply = job_msg.createReply();
+						reply.setPerformative(ACLMessage.REFUSE);
+						send(reply);
+					}
+				}
+				
 			}
 		});
+		
+		
 	}
 
 	@SuppressWarnings("serial")
 	private void doWork(Order job) {
 		busy = true;
-		int work_time = RandomNumberGenrator.getInstance().randInt(3000, 8000);
-		System.out.println("Work will take " + String.valueOf(work_time)
-				+ " ms");
-		// addBehaviour(new WakerBehaviour(this, work_time) {
-		// protected void handleElapsedTimeout() {
 		if (job.isComplete()) {
-			System.out.println("Job Complete : " + job.toString());
+			log("Job Complete : " + job.toString());
 			OutwardQueGUI.getInstance().add(job);
 		} else {
 			String nextWorker = getNextWorkerRole(job);
-			System.out.println("Next worker is : " + nextWorker);
-			if (nextWorker.contains("PAINTER")) {
-				DFAgentDescription[] result = searchForPainter(job
-						.getObjectColor());
-				if (result.length == 0) {
-					System.out.println("No " + nextWorker + " Found!");
-				} else {
-					// TODO : Choose a painter.
-					// Remove Following code.
-					job.addToProgress(job.getColorString());
+			log("Next worker is : " + nextWorker);
+			if (nextWorker.contains("PAINTER") && 
+				(role == AgentRole.PAINTER_BLUE || role == AgentRole.PAINTER_RED ||
+				 role == AgentRole.PAINTER_GREEN)) {
+					job.addToProgress(this.role.toString().split("_")[1]);
 					job.incrementPriorty();
 					job.setHolderName(getLocalName());
+					doWait(TIME_TAKEN_TO_PAINT);
 					sendJobToAgent(job, priortyQueAgentName);
-				}
-			} else if (nextWorker.equals("INIT")) {
+//				}
+			} else if (nextWorker.equals("INIT") && role == AgentRole.TRANSPORTER) {
 				job.incrementPriorty();
 				if (job.getObjectType() == ObjectType.NUT) {
 					job.addToProgress(ObjectType.NUT.toString());
@@ -170,32 +193,55 @@ public class SimpleWorker extends Agent {
 				}
 				// TODO: wrong , transporter should not send job to Priority
 				// Que.
-				DFAgentDescription[] results = searchForService(getNextWorkerRole(job));
-				sendJobToAgent(job, results[0].getName());
-			} else if (nextWorker.equals(AgentRole.FASTENER.toString())) {
-				DFAgentDescription[] result = searchForFastener();
-				if (result.length == 0) {
-					System.out.println("No " + nextWorker + " Found!");
-				} else {
-					// TODO : Choose a fastener.
-					// Remove following code.
+//				transporterCurrentJob = job;
+				String nextRole = getNextWorkerRole(job);
+				DFAgentDescription[] results = searchForService(nextRole);
+//				sendJobToAgent(job, results[0].getName());
+				sendJobToWorkers(job, results, 0);
+			} else if (nextWorker.equals(AgentRole.FASTENER.toString()) && role == AgentRole.FASTENER) {
 					if (job.getProgress().contains("NUT-SCREW")) {
 						job.setProgress(job.getProgress().replace("NUT-SCREW",
 								ObjectType.NUT_SCREW.toString()));
 						job.incrementPriorty();
 						job.setHolderName(getLocalName());
+						doWait(TIME_TAKEN_TO_FASTEN);
 						sendJobToAgent(job, priortyQueAgentName);
 					}
-				}
-			}
+			}else if (nextWorker.equals(AgentRole.FASTENER.toString()) && role == AgentRole.TRANSPORTER) {
+//				String nextRole = getNextWorkerRole(job);
+				DFAgentDescription[] results = searchForService(nextWorker);
+//				sendJobToAgent(job, results[0].getName());
+				sendJobToWorkers(job, results, 0);
+		}
 
 		}
-		// }
-		// });
-		System.out.println(getLocalName() + " Done with " + job.toString());
+		log(getLocalName() + " Done with " + job.toString());
 		busy = false;
 	}
-
+	void transportToWorker(String nextWorker){
+		log("Moving to "+nextWorker);
+		doWait(TIME_TAKEN_TO_MOVE);
+		log("Moving to inventory...");
+		doWait(TIME_TAKEN_TO_MOVE);
+	}
+//	private void waitForJobToBeSent(){
+//		doWait();
+//		addBehaviour(new Behaviour() {
+//			
+//			@Override
+//			public boolean done() {
+//				// TODO Auto-generated method stub
+//				return (transporterCurrentJob == null);
+//			}
+//			
+//			@Override
+//			public void action() {
+//				if(transporterCurrentJob == null){
+//					doWake();
+//				}
+//			}
+//		});
+//	}
 	protected void takeDown() {
 		try {
 			DFService.deregister(this);
@@ -203,22 +249,23 @@ public class SimpleWorker extends Agent {
 		}
 	}
 
-	private DFAgentDescription[] searchForService(String service) {
-		System.out.println("Searching For : " + service);
+	public DFAgentDescription[] searchForService(String service) {
+//		Logger log = Logger.getJADELogger(searcher.getLocalName());
+		log("Searching For : " + service);
 		DFAgentDescription dfd = new DFAgentDescription();
 		ServiceDescription sd = new ServiceDescription();
 		sd.setType(service);
 		dfd.addServices(sd);
 
-		DFAgentDescription[] result;
+		DFAgentDescription[] results;
 		try {
-			result = DFService.search(this, dfd);
-			System.out.println(result.length + " results");
-			for (DFAgentDescription res : result)
-				System.out.println("Found " + res.getName());
-			return result;
+			results = DFService.search(this, dfd);
+			log(results.length + " results");
+			for (DFAgentDescription result : results)
+				log("Found " + result.getName());
+			return results;
 		} catch (FIPAException e) {
-			e.printStackTrace();
+			log(e.getStackTrace().toString());
 		}
 		return null;
 	}
@@ -231,9 +278,7 @@ public class SimpleWorker extends Agent {
 		return searchForService(AgentRole.FASTENER.toString());
 	}
 
-	public String getNextWorkerRole(Order ord) {
-		System.out.println("accessing next worker prgress is : "
-				+ ord.getProgress());
+	public static String getNextWorkerRole(Order ord) {
 		if (ord.getProgress() == null) {
 			return "INIT";
 		} else if (!ord.getProgress().contains(ord.getColorString())) {
@@ -246,7 +291,7 @@ public class SimpleWorker extends Agent {
 	}
 
 	private void sendJobToAgent(Order ord, String localName) {
-		System.out.println(getLocalName() + " Sending JOB to " + localName);
+		log(getLocalName() + " Sending JOB to " + localName);
 		ACLMessage job_msg = new ACLMessage(ACLMessage.REQUEST);
 		job_msg.setProtocol(PriortyQueActions.ADD_ORDER.toString());
 		job_msg.setContent(ord.toString());
@@ -255,11 +300,43 @@ public class SimpleWorker extends Agent {
 	}
 
 	private void sendJobToAgent(Order ord, AID agentID) {
-		System.out.println(getLocalName() + " Sending JOB to " + agentID);
+		log(getLocalName() + " Sending JOB to " + agentID);
 		ACLMessage job_msg = new ACLMessage(ACLMessage.REQUEST);
 		job_msg.setProtocol(PriortyQueActions.ADD_ORDER.toString());
 		job_msg.setContent(ord.toString());
 		job_msg.addReceiver(agentID);
 		send(job_msg);
+	}
+	private void sendJobToWorkers(Order ord, DFAgentDescription[] workers,int workerNumber) {
+		if(workerNumber >= workers.length){
+			workerNumber = 0;
+		}
+		if(transporterCurrentJob == null){
+			return;
+		}
+		log(" Sending JOB to " + workers[workerNumber].getName());
+		ACLMessage job_msg = new ACLMessage(ACLMessage.REQUEST);
+		job_msg.setProtocol(PriortyQueActions.ADD_ORDER.toString());
+		job_msg.setContent(ord.toString());
+		job_msg.addReceiver(workers[workerNumber].getName());
+		send(job_msg);
+		MessageTemplate mt = MessageTemplate.and(MessageTemplate.MatchProtocol(PriortyQueActions.ADD_ORDER.toString()),
+												 MessageTemplate.or(MessageTemplate.MatchPerformative(ACLMessage.AGREE),
+														 MessageTemplate.MatchPerformative(ACLMessage.REFUSE)));
+//		MessageTemplate mt = ;
+		final int nextWorkerNumber = workerNumber+1;
+		addBehaviour(new MsgReceiver(this, mt, MsgReceiver.INFINITE, null, null){
+			protected void handleMessage(ACLMessage msg){
+				if(msg.getPerformative() == ACLMessage.AGREE){
+					log(msg.getSender().getLocalName() + " Accepted the job");
+					transporterCurrentJob = null;
+				}else{
+					sendJobToWorkers(ord, workers, nextWorkerNumber);
+				}
+			}
+		});
+	}
+	private void log(String msg){
+		System.out.println("["+getLocalName()+"]"+msg);
 	}
 }
