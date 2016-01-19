@@ -56,7 +56,7 @@ public class PriortyQueAgent extends Agent {
 	  	}
 	}
 	private boolean addOrder(Order o){
-		printQue();
+		//printQue();
 		if(o != null){
 			return que.add(o);
 		}else{
@@ -84,7 +84,7 @@ public class PriortyQueAgent extends Agent {
 			protected ACLMessage prepareResponse(ACLMessage request) throws NotUnderstoodException, RefuseException {
 				log( "ADD REQUEST received from "+request.getSender().getLocalName()+". Action is "+request.getContent());
 				if (addOrder(Order.valueOf(request.getContent()))) {
-					printQue();
+					//printQue();
 					log("Sending "+request.getSender().getLocalName()+ " AGREE");
 					ACLMessage agree = request.createReply();
 					agree.setPerformative(ACLMessage.AGREE);

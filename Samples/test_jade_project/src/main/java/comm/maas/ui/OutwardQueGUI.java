@@ -15,7 +15,7 @@ public class OutwardQueGUI extends JFrame {
 	private JScrollPane listScroller;
 	private QueTableModel tableModel;
 	private OutwardQueGUI(){
-		super("Outward Que");
+		super("Delivery Agent");
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		tableModel = new QueTableModel();
 //		tableModel.add(new Order(0,ObjectColor.RED,ObjectType.NUT));
