@@ -4,8 +4,8 @@ package com.maas.agents;
 import com.maas.agents.PriortyQueAgent.PriortyQueActions;
 import com.maas.domain.Order;
 import com.maas.domain.Order.ObjectType;
+import com.maas.ui.OutwardQueGUI;
 
-import comm.maas.ui.OutwardQueGUI;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.Behaviour;
@@ -31,6 +31,7 @@ public class SimpleWorker extends Agent {
 	private final int TIME_TAKEN_TO_MOVE = 3000;
 	private final int TIME_TAKEN_TO_PAINT = 1000;
 	private final int TIME_TAKEN_TO_FASTEN = 1000;
+	private AID timeKeeperAID=null;
 	public SimpleWorker(){
 		
 	}
@@ -50,6 +51,7 @@ public class SimpleWorker extends Agent {
 			System.exit(-1);
 		}
 		transporterCurrentJob = null;
+		
 		if (role == AgentRole.TRANSPORTER)
 			communicatePriortyQue(priortyQueAgentName);
 		else {
@@ -106,6 +108,8 @@ public class SimpleWorker extends Agent {
 				job.setHolderName(getLocalName());
 				transporterCurrentJob=job;
 				doWork(job);
+//				log("sending Event To TimeKeeper");
+				sendEventToTimeKeeper(job);
 				String nextRole = getNextWorkerRole(job);
 //				DFAgentDescription[] results = searchForService(getAgent(),nextRole);
 //				sendJobToAgent(job, results[0].getName());
@@ -149,7 +153,9 @@ public class SimpleWorker extends Agent {
 						ACLMessage reply = job_msg.createReply();
 						reply.setPerformative(ACLMessage.AGREE);
 						send(reply);
-						doWork(Order.valueOf(job_msg.getContent()));
+						Order job = Order.valueOf(job_msg.getContent());
+						doWork(job);
+						sendEventToTimeKeeper(job);
 					}else{
 						ACLMessage reply = job_msg.createReply();
 						reply.setPerformative(ACLMessage.REFUSE);
@@ -298,7 +304,25 @@ public class SimpleWorker extends Agent {
 		job_msg.addReceiver(new AID(localName, AID.ISLOCALNAME));
 		send(job_msg);
 	}
-
+	private void sendEventToTimeKeeper(Order ord){
+		//TODO: still testing
+		if(timeKeeperAID == null){
+			DFAgentDescription[] results = searchForService(TimeKeeperAgent.serviceName);
+			if(results.length > 0){
+				timeKeeperAID = results[0].getName();
+			}else{
+				timeKeeperAID=null;
+				return;
+			}
+		}
+		log("Sending event to Timekeeper");
+		ACLMessage event_msg = new ACLMessage(ACLMessage.REQUEST);
+		event_msg.setProtocol(TimeKeeperAgent.REGISTER_EVENT);
+		event_msg.setContent(ord.toString());
+		event_msg.addReceiver(timeKeeperAID);
+		send(event_msg);
+		
+	}
 	private void sendJobToAgent(Order ord, AID agentID) {
 		log(getLocalName() + " Sending JOB to " + agentID);
 		ACLMessage job_msg = new ACLMessage(ACLMessage.REQUEST);

@@ -1,4 +1,4 @@
-package comm.maas.ui;
+package com.maas.ui;
 
 import java.util.Vector;
 
